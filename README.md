@@ -370,9 +370,10 @@ The (final) output files are:
 
     [country name](https://www.loc.gov/marc/countries/countries_code.html])
 
-  - `pubisher`
+  - `publisher`
 
-    This is misspelled. This will be fixed in the next release (TODO)
+    MARC field 260\$b [publisher name](https://www.loc.gov/marc/bibliographic/bd260.html).
+    If there is no 260\$b, MARC field 264\$b (second indicator 1) [is used instead](https://www.loc.gov/marc/bibliographic/bd264.html)
 
   - `nypltype`
 

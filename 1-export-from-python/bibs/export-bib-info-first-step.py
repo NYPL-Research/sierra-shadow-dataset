@@ -239,6 +239,21 @@ def get_oclc_by_any_means_necessary(var_json):
         return "NA"
 
 
+def get_publisher(var_json):
+    from260 = get_marc_tag(var_json, "260", "b")
+    if from260 != "NA":
+        return from260
+    try:
+        whatineed = [item for item in var_json if item["marcTag"]=="264"]
+        pubs = [item for item in whatineed if item["ind2"]=="1"]
+        tmp = [item["subfields"] for item in pubs]
+        tmp = [item for sublist in tmp for item in sublist]
+        publisher = ';'.join(list(set([item["content"] for item in tmp if item["tag"]=="b"])))
+        return na(publisher)
+    except:
+        return "NA"
+
+
 #--------------------------------------------------#
 
 
@@ -362,7 +377,7 @@ for line in fileinput.input():
         index_term              = get_marc_tag(var_json, "655", "a")
         num_copies_from_bib     = get_copies(fixed_json)
         oclc                    = get_oclc_by_any_means_necessary(var_json)
-        publisherb              = get_marc_tag(var_json, "260", "b")
+        publisherb              = get_publisher(var_json)
         v880a                   = get_marc_tag(var_json, "880", "a")
         aeonbiblinkp            = get_marc_tag(var_json, "856", "u")
 
