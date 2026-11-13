@@ -465,6 +465,10 @@ All text is Unicode-normalized to NFC.
 
   - `status`
 
+    Item status from Sierra, for example AVAILABLE, IN TRANSIT, MISSING.
+    An item out on loan is shown as CHECKED OUT; Sierra itself records
+    these as AVAILABLE with a due date
+
   - `v880a`
 
   - `research_collection`

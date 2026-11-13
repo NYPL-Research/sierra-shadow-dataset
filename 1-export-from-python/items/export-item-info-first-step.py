@@ -122,10 +122,19 @@ def get_created_date(thefixedj):
     return tmp
 
 @cop_out
+def get_due_date(thefixedj):
+    tmp = thefixedj["65"]["value"]
+    if not tmp:
+        return "NA"
+    return tmp
+
+@cop_out
 def get_status(thefixedj):
     tmp = thefixedj["88"]["display"]
     if not tmp:
         return "NA"
+    if tmp == "AVAILABLE" and get_due_date(thefixedj) != "NA":
+        return "CHECKED OUT"
     return tmp
 
 @cop_out
