@@ -104,7 +104,7 @@ def get_marc_tag(thefield, marcfield, subtag,
         return "NA"
     if printit:
         print(whatineed)
-    whatineed = list(set(whatineed))
+    whatineed = list(dict.fromkeys(whatineed))
     return ";".join(whatineed)
 
 
@@ -177,9 +177,9 @@ def get_all_terms_650(var_json):
         lcsh = [item for item in whatineed if item["ind2"]=="0"]
         tmp = [item["subfields"] for item in lcsh]
         tmp = [item for sublist in tmp for item in sublist]
-        topical_terms = ';'.join(list(set([item["content"] for item in tmp if item["tag"]=="a"])))
-        gensubdivisions = ';'.join(list(set([item["content"] for item in tmp if item["tag"]=="x"])))
-        formsubdivisions = ';'.join(list(set([item["content"] for item in tmp if item["tag"]=="v"])))
+        topical_terms = ';'.join(list(dict.fromkeys([item["content"] for item in tmp if item["tag"]=="a"])))
+        gensubdivisions = ';'.join(list(dict.fromkeys([item["content"] for item in tmp if item["tag"]=="x"])))
+        formsubdivisions = ';'.join(list(dict.fromkeys([item["content"] for item in tmp if item["tag"]=="v"])))
         return (na(topical_terms), na(gensubdivisions), na(formsubdivisions))
     except:
         return ("NA", "NA", "NA")
@@ -190,7 +190,7 @@ def get_geo_term(var_json):
         lcsh = [item for item in whatineed if item["ind2"]=="0"]
         tmp = [item["subfields"] for item in lcsh]
         tmp = [item for sublist in tmp for item in sublist]
-        geo_terms = ';'.join(list(set([item["content"] for item in tmp if item["tag"]=="a"])))
+        geo_terms = ';'.join(list(dict.fromkeys([item["content"] for item in tmp if item["tag"]=="a"])))
         return na(geo_terms)
     except:
         return "NA"
@@ -230,7 +230,7 @@ def get_oclc_by_any_means_necessary(var_json):
         if from001:
             allofthem = allofthem + [from001]
         allofthem = [item.strip() for item in allofthem]
-        allofthem = list(set(allofthem))
+        allofthem = list(dict.fromkeys(allofthem))
         allofthem = [item for item in allofthem if item != "NA"]
         if allofthem:
             oclc = ';'.join(allofthem)
@@ -250,8 +250,28 @@ def get_publisher(var_json):
         pubs = [item for item in whatineed if item["ind2"]=="1"]
         tmp = [item["subfields"] for item in pubs]
         tmp = [item for sublist in tmp for item in sublist]
-        publisher = ';'.join(list(set([item["content"] for item in tmp if item["tag"]=="b"])))
+        publisher = ';'.join(list(dict.fromkeys([item["content"] for item in tmp if item["tag"]=="b"])))
         return na(publisher)
+    except:
+        return "NA"
+
+
+def get_lccall(var_json):
+    try:
+        whatineed = [item for item in var_json if item["marcTag"]=="050"]
+        calls = []
+        for item in whatineed:
+            thisfield = []
+            for inner in item["subfields"]:
+                if inner["tag"]=="a":
+                    thisfield.append(inner["content"])
+                elif inner["tag"]=="b" and thisfield:
+                    thisfield[-1] = "{} {}".format(thisfield[-1], inner["content"])
+            calls = calls + thisfield
+        calls = list(dict.fromkeys(calls))
+        if len(calls)==0:
+            return "NA"
+        return ";".join(calls)
     except:
         return "NA"
 
@@ -325,7 +345,6 @@ for line in fileinput.input():
         lccn = "NA"
         oclc = "NA"
         lccall = "NA"
-        tmp = "NA"
         callnum2 = "NA"
         v852a = "NA"
         callnum = "NA"
@@ -342,25 +361,28 @@ for line in fileinput.input():
         geo_terms = "NA"
         publisherb = "NA"
         v880a = "NA"
+        isbn = "NA"
+        issn = "NA"
+        other_standard = "NA"
+        index_term = "NA"
+        aeonbiblinkp = "NA"
 
 
     langcode, lang              = cop_lang(pieces[8])
     countrycode, country        = cop_country(pieces[15])
     standard_nums               = cop_standard_numbers(pieces[22])
+    biblevel                    = get_from_fixed(fixed_json, "29", "display")
+    mattype                     = get_from_fixed(fixed_json, "30", "display")
+    location                    = get_from_fixed(fixed_json, "26", "value")
+    num_copies_from_bib         = get_copies(fixed_json)
 
     if good:
-        biblevel                = get_from_fixed(fixed_json, "29", "display")
-        mattype                 = get_from_fixed(fixed_json, "30", "display")
-        location                = get_from_fixed(fixed_json, "26", "value")
-        isbn                    = get_marc_tag(var_json, "020", "a", leadingtoken=True)
+        isbn                   = get_marc_tag(var_json, "020", "a", leadingtoken=True)
         issn                    = get_marc_tag(var_json, "022", "a", leadingtoken=True)
         other_standard          = get_marc_tag(var_json, "024", "a", nodigits=True)
         lccn                    = get_marc_tag(var_json, "010", "a", stripit=True)
         oclc                    = get_marc_tag(var_json, "035", "a")
-        lccall                  = get_marc_tag(var_json, "050", "a")
-        tmp                     = get_marc_tag(var_json, "050", "b")
-        if tmp != "NA":
-            lccall = "{} {}".format(lccall, tmp)
+        lccall                  = get_lccall(var_json)
         callnum2                = get_marc_tag(var_json, "091", "a")
         v852a                   = get_marc_tag(var_json, "852", "a")
         callnum                 = get_marc_tag(var_json, "852", "h")
@@ -377,7 +399,6 @@ for line in fileinput.input():
         form_subdiv_term        = all_terms[2]
         geo_terms               = get_geo_term(var_json)
         index_term              = get_marc_tag(var_json, "655", "a")
-        num_copies_from_bib     = get_copies(fixed_json)
         oclc                    = get_oclc_by_any_means_necessary(var_json)
         publisherb              = get_publisher(var_json)
         v880a                   = get_marc_tag(var_json, "880", "a")

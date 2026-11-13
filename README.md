@@ -469,6 +469,10 @@ The (final) output files are:
 
   - `fy17_checkouts`
 
+    In all of the `fyNN_checkouts` columns, an item with no checkouts
+    that year is NA, not 0. It's also NA if the item didn't exist yet.
+    (The `bib_fyNN_checkouts` columns, on the other hand, use 0.)
+
   - `fy18_checkouts`
 
   - `fy19_checkouts`
