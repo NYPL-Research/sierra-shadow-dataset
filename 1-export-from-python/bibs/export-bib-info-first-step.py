@@ -64,7 +64,7 @@ def attempt_marc_extract(func):
 
 def get_marc_tag(thefield, marcfield, subtag,
                  which_record=-1, printit=False, stripit=False,
-                 nodigits=False):
+                 nodigits=False, leadingtoken=False):
     try:
         whatineed = [item for item in thefield if item["marcTag"]==marcfield]
     except:
@@ -96,6 +96,8 @@ def get_marc_tag(thefield, marcfield, subtag,
         whatineed = [item.strip() for item in whatineed]
     if nodigits:
         whatineed = [re.sub(r"\D", "", item) for item in whatineed]
+    if leadingtoken:
+        whatineed = [re.match(r"\s*([\dXx-]*)", item).group(1) for item in whatineed]
     if whatineed=="":
         return "NA"
     if len(whatineed)==0:
@@ -350,8 +352,8 @@ for line in fileinput.input():
         biblevel                = get_from_fixed(fixed_json, "29", "display")
         mattype                 = get_from_fixed(fixed_json, "30", "display")
         location                = get_from_fixed(fixed_json, "26", "value")
-        isbn                    = get_marc_tag(var_json, "020", "a", nodigits=True)
-        issn                    = get_marc_tag(var_json, "022", "a", nodigits=True)
+        isbn                    = get_marc_tag(var_json, "020", "a", leadingtoken=True)
+        issn                    = get_marc_tag(var_json, "022", "a", leadingtoken=True)
         other_standard          = get_marc_tag(var_json, "024", "a", nodigits=True)
         lccn                    = get_marc_tag(var_json, "010", "a", stripit=True)
         oclc                    = get_marc_tag(var_json, "035", "a")
