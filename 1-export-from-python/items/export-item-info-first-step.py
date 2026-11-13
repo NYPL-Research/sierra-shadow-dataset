@@ -5,6 +5,7 @@ import sys
 import re
 import json
 import fileinput
+import unicodedata
 
 
 TOTAL_LINES = 41357433
@@ -150,7 +151,7 @@ def cop_location(apiece):
 
 
 def WRITE_IT(ofh, astr):
-    ofh.write("{}\n".format(astr))
+    ofh.write("{}\n".format(unicodedata.normalize("NFC", astr)))
 
 
 

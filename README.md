@@ -253,6 +253,8 @@ The (final) output files are:
 
 ## Columns and data dictionary
 
+All text is Unicode-normalized to NFC.
+
   - `bibid`
 
   - `itemid`
@@ -328,11 +330,14 @@ The (final) output files are:
 
   - `oclc`
 
-    OCLC number. 65% present
+    OCLC number. 65% present. Taken from MARC field 035\$a (values
+    marked `(OCoLC)`) and from 001 when 003 is `OCoLC`.
+    If neither gives a number, MARC field 991\$y is used instead
 
   - `other_standard`
 
-    Miscellaneous other control numbers. Don't trust these.
+    UPC and EAN numbers, digits only. MARC field 024\$a with first
+    indicator 1 (UPC) or 3 (EAN) [more info](https://www.loc.gov/marc/bibliographic/bd024.html)
 
   - `callnum`
 
@@ -340,7 +345,8 @@ The (final) output files are:
 
   - `lccall`
 
-    Library of Congress call number.
+    Library of Congress call number (MARC field 050).
+    If there is no 050, MARC field 090 (locally assigned LC call number) is used instead
 
   - `callnum2`
 
@@ -361,6 +367,12 @@ The (final) output files are:
   - `lang`
 
     [Language name](https://www.loc.gov/marc/languages/language_code.html)
+
+  - `orig_langcode`
+
+    Language code(s) of the original work, from MARC field 041\$h [more info](https://www.loc.gov/marc/bibliographic/bd041.html).
+    Mostly present for translations. Semicolon-delimited if there is
+    more than one. It is sometimes the same as `langcode`
 
   - `countrycode`
 

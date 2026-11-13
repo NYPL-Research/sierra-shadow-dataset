@@ -102,6 +102,7 @@ clean_oclc <- function(astrings){
   astrings[str_detect(astrings, "nypg")] <- NA
   astrings <- str_replace(astrings, "^(\\d{5,}) \\(.+$", "\\1")
   astrings[str_detect(astrings, "\\D")] <- NA
+  astrings <- str_replace(astrings, "^0+(?=\\d)", "")
   return(astrings)
 }
 
@@ -198,6 +199,11 @@ dat[!is.na(lccall) & str_detect(lccall, ";"),
 dat[, lc_subject_class:=get_lc_call_subject_classification(lccall)]
 dat[, lc_subject_subclass:=get_lc_call_subject_classification(lccall,
                                                               subclassification=TRUE)]
+
+# single values that aren't LC call numbers and gave no subject
+dat[!is.na(lccall) & !str_detect(lccall, ";") &
+    !is_valid_lc_call(lccall) & is.na(lc_subject_class),
+    lccall:=NA]
 
 dat[branch_or_research=="research"] %>% dt_counts_and_percents("lc_subject_class")
 # 57% is NA

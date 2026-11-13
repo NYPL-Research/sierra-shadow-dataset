@@ -4,6 +4,7 @@ import sys
 import json
 import re
 import fileinput
+import unicodedata
 
 
 NUMBEROFLINES = 24027699
@@ -25,6 +26,7 @@ HEADER = ["bibid", "suppressed", "leader", "oh08", "source", "pub_year",
           "catalogdate", "bib_location", "biblevel", "mattype",
           "standard_nums", "isbn", "issn", "lccn", "oclc", "other_standard",
           "callnum", "lccall", "callnum2", "v852a", "langcode", "lang",
+          "orig_langcode",
           "countrycode", "country", "publisher", "nypltype", "description1",
           "otherdetails", "dimensions", "description2", "description3",
           "norm_author", "norm_title", "author", "title",
@@ -64,9 +66,11 @@ def attempt_marc_extract(func):
 
 def get_marc_tag(thefield, marcfield, subtag,
                  which_record=-1, printit=False, stripit=False,
-                 nodigits=False, leadingtoken=False):
+                 nodigits=False, leadingtoken=False, ind1=None):
     try:
         whatineed = [item for item in thefield if item["marcTag"]==marcfield]
+        if ind1:
+            whatineed = [item for item in whatineed if item["ind1"] in ind1]
     except:
         return "NA"
     if printit:
@@ -216,6 +220,7 @@ def get_oclc_by_any_means_necessary(var_json):
             these = [item for item in var_json if item["marcTag"]=="001"]
             if these:
                 from001 = these[0]["content"]
+                from001 = re.sub(r"^\|a", "", from001)
 
         # 035
         from035 = get_marc_tag(var_json, "035", "a")
@@ -235,7 +240,7 @@ def get_oclc_by_any_means_necessary(var_json):
         if allofthem:
             oclc = ';'.join(allofthem)
         else:
-            oclc = "NA"
+            oclc = get_marc_tag(var_json, "991", "y")
         return oclc
     except:
         return "NA"
@@ -256,9 +261,9 @@ def get_publisher(var_json):
         return "NA"
 
 
-def get_lccall(var_json):
+def get_lccall_from(var_json, marctag):
     try:
-        whatineed = [item for item in var_json if item["marcTag"]=="050"]
+        whatineed = [item for item in var_json if item["marcTag"]==marctag]
         calls = []
         for item in whatineed:
             thisfield = []
@@ -272,6 +277,27 @@ def get_lccall(var_json):
         if len(calls)==0:
             return "NA"
         return ";".join(calls)
+    except:
+        return "NA"
+
+def get_lccall(var_json):
+    from050 = get_lccall_from(var_json, "050")
+    if from050 != "NA":
+        return from050
+    return get_lccall_from(var_json, "090")
+
+def get_orig_langcode(var_json):
+    try:
+        whatineed = [item for item in var_json if item["marcTag"]=="041"]
+        tmp = [item["subfields"] for item in whatineed]
+        tmp = [item for sublist in tmp for item in sublist]
+        raw = [item["content"].strip().lower() for item in tmp if item["tag"]=="h"]
+        codes = []
+        for item in raw:
+            if item.isalpha() and len(item) % 3 == 0:
+                codes = codes + [item[i:i+3] for i in range(0, len(item), 3)]
+        codes = list(dict.fromkeys(codes))
+        return na(";".join(codes))
     except:
         return "NA"
 
@@ -366,6 +392,7 @@ for line in fileinput.input():
         other_standard = "NA"
         index_term = "NA"
         aeonbiblinkp = "NA"
+        orig_langcode = "NA"
 
 
     langcode, lang              = cop_lang(pieces[8])
@@ -379,7 +406,7 @@ for line in fileinput.input():
     if good:
         isbn                   = get_marc_tag(var_json, "020", "a", leadingtoken=True)
         issn                    = get_marc_tag(var_json, "022", "a", leadingtoken=True)
-        other_standard          = get_marc_tag(var_json, "024", "a", nodigits=True)
+        other_standard          = get_marc_tag(var_json, "024", "a", nodigits=True, ind1=["1", "3"])
         lccn                    = get_marc_tag(var_json, "010", "a", stripit=True)
         oclc                    = get_marc_tag(var_json, "035", "a")
         lccall                  = get_lccall(var_json)
@@ -401,6 +428,7 @@ for line in fileinput.input():
         index_term              = get_marc_tag(var_json, "655", "a")
         oclc                    = get_oclc_by_any_means_necessary(var_json)
         publisherb              = get_publisher(var_json)
+        orig_langcode           = get_orig_langcode(var_json)
         v880a                   = get_marc_tag(var_json, "880", "a")
         aeonbiblinkp            = get_marc_tag(var_json, "856", "u")
 
@@ -414,6 +442,7 @@ for line in fileinput.input():
                   catalogdate, location, biblevel, mattype, standard_nums,
                   isbn, issn, lccn, oclc, other_standard,
                   callnum, lccall, callnum2, v852a, langcode, lang,
+                  orig_langcode,
                   countrycode, country, publisherb, nypltype, description1,
                   otherdetails, dimensions, description2, description3,
                   norm_author, norm_title, author, title, num_copies_from_bib,
@@ -423,7 +452,7 @@ for line in fileinput.input():
     everything = [x.replace("\t", "") for x in everything]
 
     try:
-        OUTFH.write('\t'.join(everything).replace("\n", ""))
+        OUTFH.write(unicodedata.normalize("NFC", '\t'.join(everything).replace("\n", "")))
         OUTFH.write("\n")
     except:
         pass
