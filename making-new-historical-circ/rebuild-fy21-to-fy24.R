@@ -28,7 +28,8 @@ library(libbib)
 # This only had to be done once. From now on `update.R` makes the
 # new historical circ file each July.
 #
-# It rebuilds FY21 to FY24, which were wrong, and it adds FY25 and FY26
+# It rebuilds FY21 to FY24, which were wrong, and it adds FY25 and FY26.
+# It also fills in FY17 to FY20 for items that had been dropped
 #
 # Sierra's lifetime counter (total_checkouts) is exactly the sum of its
 # yearly counters. So, in any export,
@@ -137,6 +138,42 @@ hist[, uniqueN(itemid)]
 
 rm(old)
 rm(oldbyitem)
+gc()
+
+
+# --------------------------------------------------------------- #
+
+#################
+####  FY17 TO FY20
+
+# the old historical circ file is missing these years for some items
+# (the old update.R dropped any item that wasn't already in the file).
+# The 2021-07-11 export still has them
+
+topup <- fread(sprintf("%s%s", archive,
+                       "sierra-all-healed-joined-2021-07-11--revision-1.dat.gz"),
+               select=c("itemid", "fy17_checkouts", "fy18_checkouts",
+                        "fy19_checkouts", "fy20_checkouts"))
+# a few items are in the export more than once
+topup <- topup[, lapply(.SD, max), itemid]
+
+hist[, lapply(.SD, sum, na.rm=TRUE), .SDcols=patterns("^fy(17|18|19|20)")]
+
+# only where the file has nothing. it never changes a value that's there
+hist[topup, on="itemid",
+     `:=`(fy17_checkouts=fcoalesce(fy17_checkouts, i.fy17_checkouts),
+          fy18_checkouts=fcoalesce(fy18_checkouts, i.fy18_checkouts),
+          fy19_checkouts=fcoalesce(fy19_checkouts, i.fy19_checkouts),
+          fy20_checkouts=fcoalesce(fy20_checkouts, i.fy20_checkouts))]
+# in this file, an item with no checkouts in a year is NA and not 0
+hist[fy17_checkouts==0, fy17_checkouts:=NA]
+hist[fy18_checkouts==0, fy18_checkouts:=NA]
+hist[fy19_checkouts==0, fy19_checkouts:=NA]
+hist[fy20_checkouts==0, fy20_checkouts:=NA]
+
+hist[, lapply(.SD, sum, na.rm=TRUE), .SDcols=patterns("^fy(17|18|19|20)")]
+
+rm(topup)
 gc()
 
 
