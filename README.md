@@ -265,6 +265,17 @@ the circulation data for the title. The latter numbers are, of course,
 identical for each item under the title. This is especially useful for
 serials and branch titles.
 
+Note that all of these numbers are for the items that exist at the time of
+the export. A deleted item isn't in the export, so its checkouts aren't in
+the by-year numbers, and they aren't in its title's sums either. This means
+the total for a past year gets smaller with each new export, as items that
+circulated that year are withdrawn. For example, Sierra counted about 1.5
+million checkouts of branch items in FY21. In the 2026-07-07 export, the
+branch items that are left account for about 500,000 of them.
+
+So these datasets describe the history of the current collection. They
+can't be used to say how much circulated in a past year.
+
 The (final) output files are:
   - `./target/sierra-all-healed-joined-YYYY-MM-DD.dat.gz`
   - `./target/sierra-research-healed-joined-YYYY-MM-DD.dat.gz`
@@ -273,20 +284,16 @@ The (final) output files are:
 
 ## Columns and data dictionary
 
+Each row is one item under one bib. A bib with no items is not in these
+datasets. About 3 million of NYPL's 11.5 million bibs have none, and most
+of those are electronic resources (web resources, e-books and
+e-audiobooks). So, for the most part, those aren't here.
+
 All text is Unicode-normalized to NFC.
 
   - `bibid`
 
   - `itemid`
-
-  - `inbibtable`
-
-    Since the bib and item table or joined, its possible for
-    some bibid not to have matching items, and vice-versa
-  - `initemtable`
-
-    Since the bib and item table or joined, its possible for
-    some bibid not to have matching items, and vice-versa
 
   - `suppressed`
 

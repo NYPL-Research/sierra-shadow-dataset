@@ -115,19 +115,17 @@ items %>% verify(nrow(.) >= 16390001, success_fun=success_report) # 2026-07-07 !
 
 setkey(items, "bibid")
 setkey(bibs, "bibid")
-bibs[, inbibtable:=TRUE]
 
 
 # I guess I have to remove the records with
 # invalid bibids from the items table
 items <- items[str_detect(bibid, "^\\d+$"), ]
 # items[, bibid:=as.integer(bibid)]
-items[, initemtable:=TRUE]
 
 
 # about 3.5 minutes / 1 minute
   system.time(
-bibs %>% merge.data.table(items, all=TRUE) -> comb
+bibs %>% merge.data.table(items) -> comb
   )
 
 rm(bibs)
@@ -148,7 +146,7 @@ comb <- comb[!(str_detect(item_location_str,
 comb[,.N]
 
 
-setcolorder(comb, c("bibid", "itemid", "inbibtable", "initemtable"))
+setcolorder(comb, c("bibid", "itemid"))
 
 comb %>% names
 
@@ -168,9 +166,6 @@ comb[bibid=="19375763"]
 # Took out FY26 (new end)
 comb[bibid=="11788688"]
 
-
-comb <- comb[inbibtable==TRUE]
-# wait, ¿then why did I do a full join?
 
 comb <- comb[!is.na(itype),]
 

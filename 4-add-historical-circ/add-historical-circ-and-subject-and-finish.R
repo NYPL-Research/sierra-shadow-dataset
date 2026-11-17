@@ -152,7 +152,7 @@ comb[bibid=="20869063"] # :)
 comb[bibid=="11788688"] # Kierkegaard and the Limits of the Ethical
 
 
-setcolorder(comb, c("bibid", "itemid", "inbibtable", "initemtable",
+setcolorder(comb, c("bibid", "itemid",
                     "suppressed", "itype", "branch_or_research",
                     "is_mixed_bib"))
 comb %>% names
@@ -200,7 +200,7 @@ gc()
 #### CHANGE EVERY YEAR ####
 #### CHANGE EVERY YEAR ####
 big %>% names
-finalorder <- c("bibid", "itemid", "inbibtable", "initemtable", "suppressed",
+finalorder <- c("bibid", "itemid", "suppressed",
                 "itype", "branch_or_research", "is_mixed_bib", "leader",
                 "oh08", "source", "pub_year", "catalogdate", "bib_location",
                 "biblevel", "mattype", "standard_nums", "isbn", "issn", "lccn",
