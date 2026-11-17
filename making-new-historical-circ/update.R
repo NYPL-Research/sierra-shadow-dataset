@@ -24,67 +24,76 @@ library(libbib)
 
 # ------------------------------ #
 
-
-#############################################
-##### THIS WILL CHANGE EACH FISCAL YEAR #####
-#############################################
-
-old <- fread("../data/historical-circ/historical-circ-fy17-fy22.dat.gz")
-
-lessold <- fread("../target/sierra-all-healed-joined-2024-07-01.dat.gz",
-                 select=c("bibid", "itemid", "fy17_checkouts",
-                          "fy18_checkouts", "fy19_checkouts",
-                          "fy20_checkouts", "fy21_checkouts",
-                          "fy22_checkouts", "fy23_checkouts"))
-
-
-setnames(old, c("bibid", "itemid", "oldfy17_checkouts",
-                "oldfy18_checkouts", "oldfy19_checkouts",
-                "oldfy20_checkouts", "oldfy21_checkouts",
-                "oldfy22_checkouts"))
-
-setkey(old,     "itemid", "bibid")
-setkey(lessold, "itemid", "bibid")
-
-old[lessold, nomatch=NULL] -> comb
+# Makes the next historical circ file from the export made in July.
+#
+# Run it once a year, after the July export is finished (after step 4)
+# and before the next export is made.
+#
+# Step 4 gets the current fiscal year by subtracting an item's total
+# checkouts in the last July export from its total checkouts now.
+# So a July export already has every fiscal year in it. This keeps
+# those columns, and total checkouts, for next year.
+#
+# Every row of the export is kept. Nothing is joined, so no item
+# can be dropped.
+#
+# Sierra's yearly counters aren't used
+# (see rebuild-fy21-to-fy24.R for why)
 
 
-old[,.N]
-lessold[,.N]
-comb[,.N]
+# the export in ../target/ has to be the one made in July
+tmp <- fread_plus_date("../target/sierra-all-healed-joined.dat.gz", nrows=0)
+expdate <- attr(tmp, "lb.date")
+fycols <- names(tmp) %>% str_subset("^fy\\d\\d_checkouts$")
 
-comb
+expdate
+fycols
 
-comb[oldfy17_checkouts!=fy17_checkouts,.N]
-comb[oldfy18_checkouts!=fy18_checkouts,.N]
-comb[oldfy19_checkouts!=fy19_checkouts,.N]
-comb[oldfy20_checkouts!=fy20_checkouts,.N]
-comb[oldfy21_checkouts!=fy21_checkouts,.N]
-comb[oldfy22_checkouts!=fy22_checkouts,.N]
-# comb[oldfy19_checkouts==fy20_checkouts,.N] < comb[,.N]
+if(format(as.Date(expdate), "%m") != "07")
+  stop("the export in ../target/ wasn't made in July")
+
+# the newest fiscal year in the export has to be the one that just ended
+lastfy <- fycols %>% sort %>% tail(1) %>% str_extract("^fy\\d\\d")
+if(lastfy != format(as.Date(expdate), "fy%y"))
+  stop("the newest fiscal year in the export isn't the one that just ended")
+
+outfile <- sprintf("../data/historical-circ/historical-circ-fy17-%s.dat.gz",
+                   lastfy)
+if(file.exists(outfile))
+  stop("the output file already exists. I won't overwrite it")
+
+
+dat <- fread_plus_date("../target/sierra-all-healed-joined.dat.gz",
+                       select=c("bibid", "itemid", fycols, "total_checkouts"))
+
+setnames(dat, "total_checkouts", "total_checkouts_at_last_july")
+setcolorder(dat, c("bibid", "itemid", fycols, "total_checkouts_at_last_july"))
+
+dat[,.N]
+dat[, uniqueN(itemid)]
+dat[is.na(total_checkouts_at_last_july), .N]     # should be 0
+dat[, lapply(.SD, sum, na.rm=TRUE), .SDcols=patterns("^fy")]
 
 
 ## debugging
 # this was a book about knots that
 # I took out 2020-12
-comb[bibid==11315077]
-comb[itemid==14021710]
+dat[bibid==11315077]
+dat[itemid==14021710]
 
-comb[bibid==20869063]     # :)
-
-comb[,oldfy17_checkouts:=NULL]
-comb[,oldfy18_checkouts:=NULL]
-comb[,oldfy19_checkouts:=NULL]
-comb[,oldfy20_checkouts:=NULL]
-comb[,oldfy21_checkouts:=NULL]
-comb[,oldfy22_checkouts:=NULL]
-
-setcolorder(comb, c("bibid", "itemid"))
-
-rm(old)
-rm(lessold)
-gc()
+dat[bibid==20869063]     # :)
 
 
-comb %>% fwrite("../data/historical-circ/historical-circ-fy17-fy23.dat.gz")
+dat %>% fwrite(outfile)
 
+
+#############################################################
+##### AFTER THIS, THESE HAVE TO CHANGE IN STEP 4        #####
+##### (../4-add-historical-circ/)                       #####
+#############################################################
+#
+#   - the date in the check that "ensures that years aren't messed up"
+#   - the name of the historical circ file
+#   - `lastjuly`, and the name of the column for the new fiscal year
+#   - the two places where the `bib_fy` sums are made
+#   - `finalorder`

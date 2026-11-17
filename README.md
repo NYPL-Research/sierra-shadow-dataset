@@ -93,15 +93,13 @@ There you'll find...
 
   - a copy of the latest historical circ information used in the process
     for joining with with the dumps to include circ counts from previous
-    years. At time of writing, this is a 8 column gzipped tab-delimited
-    dataset including `bibid`, `itemid`, `fy17_checkouts`, `fy18_checkouts`,
-    `fy19_checkouts`, `fy20_checkouts`, `fy21_checkouts`, and
-    `fy22_checkouts`. When joined with the lasted aggregation, for
-    example, this will yield FY17-to-FY22 circ information for every
-    NYPL item
+    years. At time of writing, this is a 13 column gzipped tab-delimited
+    dataset including `bibid`, `itemid`, a `fyNN_checkouts` column for
+    each year from FY17 to FY26, and `total_checkouts_at_last_july`
+    (each item's total checkouts in the last export made in July)
 
 All of the files above include the date of the database(s) export before
-the file extension. As of time of writing this is __2024-01-08__.
+the file extension.
 
 The files may also have a revision number if a change (improvement) to
 the data files was made but not using new data exported from shadow Sierra.
@@ -146,7 +144,6 @@ unix/coreutils tools were used and a postgresql client is needed.
 ## Organization of git repo
 
 Each step has a separate folder and must be run sequentially.
-Note that Step 4 is including in Step 3's folder.
 
 This repo will branch from master for each sqldump and be named after
 the date of export. Git tags will also be used for "releases"
@@ -234,9 +231,32 @@ is now ready for the final stage.
 Step 4
 -----
 This final stage joins previous years' circulation data into the mix. At
-time of writing, FY17, FY18 FY19, FY20, FY21, and FY22 circulation numbers
-are thrown in with the complete FY23 and FY24 numbers, creating eight
-consecutive years with by-year circulation information.
+time of writing, FY17 through FY26 circulation numbers come from the
+historical circ file and the current fiscal year (FY27) is worked out,
+creating eleven consecutive years with by-year circulation information.
+
+The by-year numbers do not come from Sierra's own "this year" and "last
+year" counters. Those are only right if the counters are reset on the same
+day every year and the reset reaches every item. Neither is true. Instead,
+a fiscal year is the change in an item's `total_checkouts` between the
+export made one July and the export made the next July. The current fiscal
+year is `total_checkouts` minus what it was in the last July export. After
+each July export, `./making-new-historical-circ/update.R` makes the next
+historical circ file.
+
+So the "fiscal years" run from one export or counter reset to the next, and
+not exactly from July 1 to June 30:
+
+| column | from | to |
+|---|---|---|
+| `fy17_checkouts` to `fy20_checkouts` | | as Sierra's counters had them |
+| `fy21_checkouts` | the reset in 2020 | about 2021-07-30 |
+| `fy22_checkouts` | about 2021-07-30 | about 2022-07-09 |
+| `fy23_checkouts` | about 2022-07-09 | about 2023-07-15 |
+| `fy24_checkouts` | about 2023-07-15 | 2024-07-01 |
+| `fy25_checkouts` | 2024-07-01 | 2025-07-10 |
+| `fy26_checkouts` | 2025-07-10 | 2026-07-07 |
+| `fy27_checkouts` | 2026-07-07 | the date of the export |
 
 Additionally, all of the items under each `bibid` have all of their
 circulation numbers summed. This means, that for each row (unique `bibid`
@@ -477,6 +497,18 @@ All text is Unicode-normalized to NFC.
 
   - `total_checkouts`
 
+    Lifetime checkout count from Sierra.
+
+    __Be careful with this for research items.__ A count of 1 on a
+    research item is most likely not a reader. As of the 2026-03 export,
+    56% of research items have exactly one checkout (14% of branch items
+    do). Of the research items with any checkouts, about 31% were last
+    "checked out" in 2011-2012 on days when tens of thousands of items
+    were checked out at a single location, and another 29% have a count
+    but no checkout date at all. So `total_checkouts > 0` badly
+    overstates how much of the research collection has been used. The
+    `fyNN_checkouts` columns are a better measure of use from FY17 on.
+
   - `total_renewals`
 
   - `total_circ`
@@ -488,6 +520,7 @@ All text is Unicode-normalized to NFC.
     In all of the `fyNN_checkouts` columns, an item with no checkouts
     that year is NA, not 0. It's also NA if the item didn't exist yet.
     (The `bib_fyNN_checkouts` columns, on the other hand, use 0.)
+    See Step 4 for the dates each of these columns covers.
 
   - `fy18_checkouts`
 
@@ -506,6 +539,8 @@ All text is Unicode-normalized to NFC.
   - `fy25_checkouts`
 
   - `fy26_checkouts`
+
+  - `fy27_checkouts`
 
   - `bib_fy17_checkouts`
 
@@ -546,6 +581,10 @@ All text is Unicode-normalized to NFC.
   - `bib_fy26_checkouts`
 
     Sum of FY26 checkouts for all items under bibid (very useful)
+
+  - `bib_fy27_checkouts`
+
+    Sum of FY27 checkouts for all items under bibid (very useful)
 
   - `bib_total_checkouts`
 

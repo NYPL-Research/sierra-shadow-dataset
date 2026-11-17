@@ -39,11 +39,12 @@ dat <- fread_plus_date("../3-heal/target/big-healed-sierra-comb-just-two-years.d
                                     "item_location_str"="factor"))
 expdate <- attr(dat, "lb.date")
 
-# ensures that years aren't messed up
-if(as.Date(expdate) > as.Date("2026-06-30"))
-  stop("new year. make sure you update this script")
+# ensures that years aren't messed up.
+# an export made in July is still made with the fiscal year that just ended
+if(as.Date(expdate) > as.Date("2027-07-31"))
+  stop("new fiscal year. run ../making-new-historical-circ/update.R on the July export, then update this script")
 
-old <- fread("../data/historical-circ/historical-circ-fy17-fy24.dat.gz")
+old <- fread("../data/historical-circ/historical-circ-fy17-fy26.dat.gz")
 
 dat %>% names
 
@@ -93,13 +94,28 @@ compare("11265824")
 #### UPDATE EVERY YEAR!!! ####
 #### UPDATE EVERY YEAR!!! ####
 #### UPDATE EVERY YEAR!!! ####
-setnames(dat, "last_year_circ", "fy25_checkouts")
-setnames(dat, "this_year_circ", "fy26_checkouts")
+# the date of the July export that the historical circ file was made from
+lastjuly <- "2026-07-07"
+
+# Sierra's yearly counters aren't used anymore.
+# (see ../making-new-historical-circ/rebuild-fy21-to-fy24.R)
+dat[, last_year_circ:=NULL]
+dat[, this_year_circ:=NULL]
 
 setkey(old, "bibid", "itemid")
 setkey(dat, "bibid", "itemid")
 
 dat %>% merge(old, all.x=TRUE) -> comb
+
+# the current fiscal year is everything since the last July export
+comb[, fy27_checkouts:=total_checkouts-total_checkouts_at_last_july]
+# an item created since then isn't in the historical circ file
+comb[is.na(total_checkouts_at_last_july) &
+     as.character(created_date)>=lastjuly,
+     fy27_checkouts:=total_checkouts]
+# like the other years, no checkouts is NA and not 0
+comb[fy27_checkouts<=0, fy27_checkouts:=NA]
+comb[, total_checkouts_at_last_july:=NULL]
 
 comb %>% names
 
@@ -161,6 +177,7 @@ comb[, .(bib_fy17_checkouts         = sum(fy17_checkouts, na.rm=TRUE),
          bib_fy24_checkouts         = sum(fy24_checkouts, na.rm=TRUE),
          bib_fy25_checkouts         = sum(fy25_checkouts, na.rm=TRUE),
          bib_fy26_checkouts         = sum(fy26_checkouts, na.rm=TRUE),
+         bib_fy27_checkouts         = sum(fy27_checkouts, na.rm=TRUE),
          bib_total_checkouts        = sum(total_checkouts, na.rm=TRUE),
          bib_total_renewals         = sum(total_renewals, na.rm=TRUE),
          bib_total_circ             = sum(total_circ, na.rm=TRUE)),
@@ -202,12 +219,13 @@ finalorder <- c("bibid", "itemid", "inbibtable", "initemtable", "suppressed",
                 "fy17_checkouts", "fy18_checkouts", "fy19_checkouts",
                 "fy20_checkouts", "fy21_checkouts", "fy22_checkouts",
                 "fy23_checkouts", "fy24_checkouts", "fy25_checkouts",
-                "fy26_checkouts",
+                "fy26_checkouts", "fy27_checkouts",
                 "bib_fy17_checkouts", "bib_fy18_checkouts",
                 "bib_fy19_checkouts", "bib_fy20_checkouts",
                 "bib_fy21_checkouts", "bib_fy22_checkouts",
                 "bib_fy23_checkouts", "bib_fy24_checkouts",
                 "bib_fy25_checkouts", "bib_fy26_checkouts",
+                "bib_fy27_checkouts",
                 "bib_total_checkouts", "bib_total_renewals",
                 "bib_total_circ","dewey_class", "dewey_division",
                 "dewey_section", "lc_subject_class", "lc_subject_subclass")
@@ -288,6 +306,7 @@ research[, .(bib_fy17_checkouts           = sum(fy17_checkouts, na.rm=TRUE),
              bib_fy24_checkouts           = sum(fy24_checkouts, na.rm=TRUE),
              bib_fy25_checkouts           = sum(fy25_checkouts, na.rm=TRUE),
              bib_fy26_checkouts           = sum(fy26_checkouts, na.rm=TRUE),
+             bib_fy27_checkouts           = sum(fy27_checkouts, na.rm=TRUE),
              bib_total_checkouts          = sum(total_checkouts, na.rm=TRUE),
              bib_total_renewals           = sum(total_renewals, na.rm=TRUE),
              bib_total_circ               = sum(total_circ, na.rm=TRUE)),
