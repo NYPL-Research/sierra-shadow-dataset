@@ -96,6 +96,8 @@ compare("11265824")
 #### UPDATE EVERY YEAR!!! ####
 # the date of the July export that the historical circ file was made from
 lastjuly <- "2026-07-07"
+if(as.Date(expdate) < as.Date(lastjuly))
+  stop("this export is older than the historical circ file. they can't be used together")
 
 # Sierra's yearly counters aren't used anymore.
 # (see ../making-new-historical-circ/rebuild-fy21-to-fy24.R)

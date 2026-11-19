@@ -293,6 +293,7 @@ Once that export is out, the previous historical file
 | Message | Where | What it means | What to do |
 |---|---|---|---|
 | `new fiscal year. run ../making-new-historical-circ/update.R on the July export, then update this script` | Step 4 | The export is dated after July 31 and step 4 is still on last year. | If the July export was made: do steps 2 to 5 above, then rerun. If no export was made in July: see "No export was made in July". |
+| `this export is older than the historical circ file. they can't be used together` | Step 4 | The export is dated before `lastjuly`. The historical circ file holds totals as of the last July export, so an older export can't be measured against it. | Use dumps taken after the last July export. If the dumps are right, `lastjuly` or the historical circ file is from the wrong year. |
 | `argument specifying columns received non-existing column(s): ... 'fy28_checkouts'` (or similar) | Step 4, at `setcolorder` | A name in `finalorder` is not in the data. | One of the five places was missed, or step 4 is reading the old historical file (place 2). |
 | `the export in ../target/ wasn't made in July` | `update.R` | The export's date is not in July. | Make sure the right export is in `target/`. If the year-end export really was not in July: see below. |
 | `the newest fiscal year in the export isn't the one that just ended` | `update.R` | The newest `fyNN_checkouts` column does not match the export's year. | Step 4 was bumped before the July export was made, or this is last year's export. See "Step 4 was bumped too early". |
