@@ -228,6 +228,9 @@ for currentline in fileinput.input():
         debug(COUNTER, currentline, "no created date")
         continue
     itype                       = get_itype(fixed)
+    if itype is None:
+        debug(COUNTER, currentline, "item type is null")
+        itype = "NA"
     total_circ                  = get_total_circ(fixed)
     last_year_circ              = get_last_years_circ(fixed)
     this_year_circ              = get_year_to_date_circ(fixed)

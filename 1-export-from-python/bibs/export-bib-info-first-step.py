@@ -220,7 +220,8 @@ def get_oclc_by_any_means_necessary(var_json):
             these = [item for item in var_json if item["marcTag"]=="001"]
             if these:
                 from001 = these[0]["content"]
-                from001 = re.sub(r"^\|a", "", from001)
+                if from001:
+                    from001 = re.sub(r"^\|a", "", from001)
 
         # 035
         from035 = get_marc_tag(var_json, "035", "a")
@@ -448,6 +449,11 @@ for line in fileinput.input():
                   norm_author, norm_title, author, title, num_copies_from_bib,
                   topical_terms, gen_subdiv_term, form_subdiv_term, index_term,
                   geo_terms, v880a, aeonbiblinkp]
+
+    if None in everything:
+        sys.stderr.write("NONE IN {}: {}\n".format(
+            bibid, [h for h, x in zip(HEADER, everything) if x is None]))
+        everything = ["NA" if x is None else x for x in everything]
 
     everything = [x.replace("\t", "") for x in everything]
 
